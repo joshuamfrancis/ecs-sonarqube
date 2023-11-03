@@ -1,0 +1,38 @@
+AWSTemplateFormatVersion: "2010-09-09"
+
+Parameters:
+  VpcSubnets:
+    Type: 'String'
+    Description: Provide a comma seperated list of subnet-ids for the Service
+
+Resources:
+  Cluster:
+    Type: "AWS::ECS::Cluster"
+
+  TaskDefinition:
+    Type: "AWS::ECS::TaskDefinition"
+    Properties:
+      Family: "sonarqube-task"
+      Cpu: "256"
+      Memory: "2048"
+      NetworkMode: "awsvpc"
+      RequiresCompatibilities:
+        - "FARGATE"
+      ExecutionRoleArn: "ecsTaskExecutionRole"
+      ContainerDefinitions:
+        - Name: "sonarqube-container"
+          Image: "sonarqube:latest"
+          PortMappings:
+            - ContainerPort: 9000
+
+  Service:
+    Type: "AWS::ECS::Service"
+    Properties:
+      Cluster: !Ref "Cluster"
+      TaskDefinition: !Ref "TaskDefinition"
+      LaunchType: "FARGATE"
+      NetworkConfiguration:
+        AwsvpcConfiguration:
+          Subnets: !Split [',', !Ref VpcSubnets] 
+          AssignPublicIp: "ENABLED"
+      DesiredCount: 1
